@@ -1,14 +1,15 @@
 require 'redis'
+require 'resque'
 require 'yaml'
 
 module Reqflow
   class Instance
     attr_reader :redis, :workflow_id, :name, :actions, :payload
-    attr_accessor :auto_queue
+    attr_accessor :queue, :auto_queue
 
     class << self
       def perform(workflow_id, action, pid)
-        load(workflow_id,pid).run!(action)
+        self.new(workflow_id,pid).run!(action)
       end
       
       def root
@@ -30,7 +31,8 @@ module Reqflow
         config = YAML.load(File.read(self.class.root.join('config','workflows',"#{config}.yml")))
       end
       
-      @redis = Redis.new redis_config
+      @redis = Resque.redis
+      @queue = 'med'
       @workflow_id = config[:workflow_id]
       @name = config[:name]
       @actions = config[:actions]
@@ -61,7 +63,7 @@ module Reqflow
     end
     
     def job_key(ext)
-      [workflow_id,payload.gsub(/:/,'_'),ext].compact.join(':')
+      [workflow_id,"job_#{payload}".gsub(/:/,'_'),ext].compact.join(':')
     end
 
     def set(action, key, value)
@@ -78,10 +80,6 @@ module Reqflow
     
     def reset!(force=false)
       @actions.keys.each { |action| status!(action, 'WAITING') if (force or status(action).nil?) }
-    end
-    
-    def purge!
-      redis.del(job_key)
     end
     
     def details(action=:all)
@@ -105,6 +103,7 @@ module Reqflow
       raise UnknownAction, "Unknown action: #{action}" unless @actions.keys.include?(action)
       set(action, 'status', new_status)
       message! action, message
+      status(action)
     end
     
     def message(action)
@@ -118,11 +117,13 @@ module Reqflow
     def complete!(action, message=nil)
       status! action, 'COMPLETED', message
       queue! if @auto_queue
+      status(action)
     end
     
     def skip!(action, message=nil)
       status! action, 'SKIPPED', message
       queue! if @auto_queue
+      status(action)
     end
 
     def fail!(action, message=nil)
@@ -131,18 +132,18 @@ module Reqflow
     
     def run!(action)
       begin
+        status! action, 'RUNNING'
         action_def = @actions[action]
         action_class = action_def[:class].split(/::/).inject(Module) do |mod,sym| 
           mod.const_get(sym.to_sym)
         end
-        action_class.new(action_def[:config], payload).do_work
+        action_method = (action_def[:method] || action).to_sym
+        action_class.new(action_def[:config]).send(action_method, payload)
         complete! action
-      rescue Reqflow::RetriableError
-        status! action, 'WAITING'
       rescue Exception => e
         fail! action, "#{e.class}: #{e.message}"
+        raise e
       end
-      status(action)
     end
     
     def queue!(action=:all)
@@ -150,11 +151,19 @@ module Reqflow
         ready.collect { |a| queue! a }
       else
         status! action, 'QUEUED'
-        Resque.enqueue(self.class, workflow_id, action, payload)
+        Resque.push(self.queue, class: self.class, args: [workflow_id, action, payload])
         status(action)
       end
     end
 
+    def queued?(action)
+      status(action) == 'QUEUED'
+    end
+    
+    def running?(action)
+      status(action) == 'RUNNING'
+    end
+    
     def completed?(action=:all)
       if action == :all
         @actions.keys.all? { |a| completed?(a) }
@@ -182,6 +191,14 @@ module Reqflow
         prereqs = @actions[action][:prereqs] || []
         waiting?(action) && prereqs.all? { |req| completed?(req) }
       end
+    end
+    
+    def to_s
+      status.inspect
+    end
+    
+    def inspect
+      "#<#{self.class.name}:#{'0x%14.14x' % (object_id<<1)} #{to_s}>"
     end
   end
 end

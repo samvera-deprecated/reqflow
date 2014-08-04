@@ -1,6 +1,10 @@
 # Reqflow
 
-TODO: Write a gem description
+Simple, self-aware, requirements based workflow manager based on Redis/Resque.
+
+Reqflow lets you define workflows based on actions that define their own 
+prerequisites. Actions whose prerequisites are met can be queued in parallel 
+with one another.
 
 ## Installation
 
@@ -14,15 +18,11 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install Reqflow
-
-## Usage
-
-TODO: Write usage instructions here
+    $ gem install reqflow
 
 ## Contributing
 
-1. Fork it ( https://github.com/[my-github-username]/Reqflow/fork )
+1. Fork it ( https://github.com/mbklein/reqflow/fork )
 2. Create your feature branch (`git checkout -b my-new-feature`)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
