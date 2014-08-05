@@ -1,4 +1,6 @@
-# Reqflow
+# reqflow
+
+[![Build Status](https://secure.travis-ci.org/projecthydra-labs/reqflow.png)](http://travis-ci.org/projecthydra-labs/reqflow)
 
 Simple, self-aware, requirements based workflow manager based on Redis/Resque.
 
