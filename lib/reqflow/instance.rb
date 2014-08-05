@@ -4,6 +4,8 @@ require 'yaml'
 
 module Reqflow
   class Instance
+    include Reqflow::Callbacks
+    
     TIME_LOG_FORMAT = '%Y-%m-%dT%H:%M:%S.%L%z'
     
     attr_reader :redis, :workflow_id, :name, :actions, :payload
@@ -46,6 +48,7 @@ module Reqflow
     
     def log(*args)
       redis.rpush('log',([Time.now.strftime(TIME_LOG_FORMAT)]+args).join(' '))
+      redis.ltrim('log', -1000, -1)
     end
     
     def verify_actions
@@ -99,10 +102,12 @@ module Reqflow
     
     def status!(action, new_status, message=nil)
       raise UnknownAction, "Unknown action: #{action}" unless @actions.keys.include?(action)
-      redis.multi do
-        set(action, 'status', new_status)
-        message! action, message
-        log action, payload, new_status, message.to_s.gsub(/\n/,' / ')
+      self.class.status_changing(self, action, new_status, message) do
+        redis.multi do
+          set(action, 'status', new_status)
+          message! action, message
+          log action, payload, new_status, message.to_s.gsub(/\n/,' / ')
+        end
       end
       status(action)
     end

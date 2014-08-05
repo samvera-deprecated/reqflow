@@ -1,4 +1,5 @@
 require "reqflow/version"
+require "reqflow/callbacks"
 require "reqflow/instance"
 
 module Reqflow

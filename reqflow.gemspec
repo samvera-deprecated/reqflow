@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["mbklein@gmail.com"]
   spec.summary       = %q{Simple, self-aware, requirements based workflow manager based on Redis/Resque.}
   spec.description   = %q{Reqflow lets you define workflows based on actions that define their own prerequisites. Actions whose prerequisites are met can be queued in parallel with one another.}
-  spec.homepage      = "https://github.com/mbklein/reqflow"
+  spec.homepage      = "https://github.com/projecthydra-labs/reqflow"
   spec.license       = "Apache2"
 
   spec.files         = `git ls-files -z`.split("\x0")

@@ -175,5 +175,27 @@ describe Reqflow::Instance do
       expect(subject.to_s)
       expect(subject.inspect)
     end
-  end
+    
+    describe 'callbacks' do
+      before :each do
+        Reqflow::Instance.before_status_change do |wf, action, new|
+          $stderr.puts("#{wf.workflow_id} for #{wf.payload} is changing #{action} to #{new}")
+        end
+
+        Reqflow::Instance.after_status_change do |wf, action, new|
+          $stderr.puts("#{wf.workflow_id} for #{wf.payload} changed #{action} to #{new}")
+        end
+      end
+      
+      after :each do
+        Reqflow::Instance.reset_callbacks
+      end
+      
+      it "should call callbacks" do
+        expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 is changing inspect to COMPLETED") 
+        expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 changed inspect to COMPLETED") 
+        subject.complete! :inspect
+      end
+    end
+  end  
 end
