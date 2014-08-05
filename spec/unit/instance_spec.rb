@@ -91,6 +91,7 @@ describe Reqflow::Instance do
     end
     
     it "should complete!" do
+      subject.auto_queue = false
       subject.complete! :inspect
       expect(subject.status(:inspect)).to eq('COMPLETED')
       expect(subject).not_to be_completed
@@ -99,6 +100,7 @@ describe Reqflow::Instance do
     end
 
     it "should skip!" do
+      subject.auto_queue = false
       subject.complete! :inspect
       subject.complete! :transcode_low
       subject.skip!     :transcode_medium
@@ -115,13 +117,11 @@ describe Reqflow::Instance do
       subject.complete! :transcode_high
       subject.fail! :transcode_medium, 'It had to fail. This is a test.'
       expect(subject.status(:transcode_medium)).to eq('FAILED')
+      expect(subject.status(:transcode_low)).to eq('QUEUED')
       expect(subject.message(:transcode_medium)).to eq('It had to fail. This is a test.')
       expect(subject.message(:transcode_high)).to eq(nil)
       expect(subject).not_to be_completed
       expect(subject).to be_failed
-      expect(subject.ready).to eq([:transcode_low])
-      subject.complete! :transcode_low
-      expect(subject.ready).to eq([])
     end
     
     it "should queue actions" do
@@ -135,7 +135,6 @@ describe Reqflow::Instance do
       expect(subject).to be_waiting(:transcode_medium)
       expect(subject).to be_waiting(:transcode_low)
       subject.complete!(:inspect)
-      subject.queue!
       expect(subject).to be_completed(:inspect)
       expect(subject).to be_queued(:transcode_high)
       expect(subject).to be_queued(:transcode_medium)
@@ -146,7 +145,9 @@ describe Reqflow::Instance do
       expect($stderr).to receive(:puts).with('Inspecting changeme:123')
       Reqflow::Instance.perform('spec_workflow', :inspect, 'changeme:123')
       expect(subject.status(:inspect)).to eq('COMPLETED')
-      expect(subject.ready).to include(*[:transcode_low, :transcode_medium, :transcode_high])
+      expect(subject).to be_queued(:transcode_high)
+      expect(subject).to be_queued(:transcode_medium)
+      expect(subject).to be_queued(:transcode_low)
     end
     
     it "should know when an action is running" do
@@ -192,8 +193,10 @@ describe Reqflow::Instance do
       end
       
       it "should call callbacks" do
-        expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 is changing inspect to COMPLETED") 
-        expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 changed inspect to COMPLETED") 
+        ['inspect to COMPLETED','transcode_high to QUEUED','transcode_medium to QUEUED','transcode_low to QUEUED'].each do |change|
+          expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 is changing #{change}") 
+          expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 changed #{change}") 
+        end
         subject.complete! :inspect
       end
     end

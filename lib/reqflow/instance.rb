@@ -40,7 +40,7 @@ module Reqflow
       @workflow_id = config[:workflow_id]
       @name = config[:name]
       @actions = config[:actions]
-      @auto_queue = config[:auto_queue] != false
+      @auto_queue = true
       @payload = payload
       verify_actions
       reset!
@@ -121,18 +121,14 @@ module Reqflow
     end
     
     def complete!(action, message=nil)
-      redis.multi do
-        status! action, 'COMPLETED', message
-        queue! if @auto_queue
-      end
+      status! action, 'COMPLETED', message
+      queue! if @auto_queue
       status(action)
     end
     
     def skip!(action, message=nil)
-      redis.multi do
-        status! action, 'SKIPPED', message
-        queue! if @auto_queue
-      end
+      status! action, 'SKIPPED', message
+      queue! if @auto_queue
       status(action)
     end
 

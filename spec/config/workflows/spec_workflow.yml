@@ -1,7 +1,6 @@
 ---
 :workflow_id: spec_workflow
 :name: Spec Workflow
-:auto_queue: false
 :actions:
   :inspect:
     :class: ReqflowSpec::Workflow
