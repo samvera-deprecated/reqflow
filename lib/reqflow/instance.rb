@@ -4,6 +4,8 @@ require 'yaml'
 
 module Reqflow
   class Instance
+    TIME_LOG_FORMAT = '%Y-%m-%dT%H:%M:%S.%L%z'
+    
     attr_reader :redis, :workflow_id, :name, :actions, :payload
     attr_accessor :queue, :auto_queue
 
@@ -31,7 +33,7 @@ module Reqflow
         config = YAML.load(File.read(self.class.root.join('config','workflows',"#{config}.yml")))
       end
       
-      @redis = Resque.redis
+      (@redis = Resque.redis.dup).namespace = :reqflow
       @queue = 'med'
       @workflow_id = config[:workflow_id]
       @name = config[:name]
@@ -42,14 +44,10 @@ module Reqflow
       reset!
     end
     
-    def redis_config
-      begin
-        YAML.load(File.read(self.class.root.join('config','redis.yml')))
-      rescue
-        {}
-      end
+    def log(*args)
+      redis.rpush('log',([Time.now.strftime(TIME_LOG_FORMAT)]+args).join(' '))
     end
-
+    
     def verify_actions
       missing = []
       @actions.each_pair do |action, definition|
@@ -101,8 +99,11 @@ module Reqflow
     
     def status!(action, new_status, message=nil)
       raise UnknownAction, "Unknown action: #{action}" unless @actions.keys.include?(action)
-      set(action, 'status', new_status)
-      message! action, message
+      redis.multi do
+        set(action, 'status', new_status)
+        message! action, message
+        log action, payload, new_status, message.to_s.gsub(/\n/,' / ')
+      end
       status(action)
     end
     
@@ -115,14 +116,18 @@ module Reqflow
     end
     
     def complete!(action, message=nil)
-      status! action, 'COMPLETED', message
-      queue! if @auto_queue
+      redis.multi do
+        status! action, 'COMPLETED', message
+        queue! if @auto_queue
+      end
       status(action)
     end
     
     def skip!(action, message=nil)
-      status! action, 'SKIPPED', message
-      queue! if @auto_queue
+      redis.multi do
+        status! action, 'SKIPPED', message
+        queue! if @auto_queue
+      end
       status(action)
     end
 

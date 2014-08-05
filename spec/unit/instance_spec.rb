@@ -70,16 +70,6 @@ describe Reqflow::Instance do
       subject.reset!(true)
     end
     
-    it "should default to an empty hash" do
-      expect(subject.redis_config).to eq({})
-    end
-    
-    it "should be able to find its redis config" do
-      redis_config = { host: 'redis.example.edu', bool: true }
-      allow(File).to receive(:read) { |*args| args.first.to_s =~ /redis\.yml$/ }.and_return(YAML.dump(redis_config))
-      expect(subject.redis_config).to eq(redis_config)
-    end
-
     it "should load" do
       expect(subject.workflow_id).to eq('spec_workflow')
     end
