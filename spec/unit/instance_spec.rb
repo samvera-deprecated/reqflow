@@ -46,10 +46,10 @@ describe Reqflow do
           end
 
           def transcode(payload)
-            $stderr.puts "Transcoding #{payload} with options #{config[:params][:command_line]}"
+            $stderr.puts "Transcoding #{payload} with options #{config['params']['command_line']}"
           end
 
-          def distirbute(payload)
+          def distribute(payload)
             $stderr.puts "Distributing #{payload}"
           end
 
@@ -79,7 +79,7 @@ describe Reqflow do
     end
 
     it "should verify prerequisites" do
-      config = {workflow_id: "spec_workflow", name: "Spec Workflow", auto_queue: false, actions: { inspect: { prereqs: [:unknown] } }}
+      config = {'workflow_id'=>"spec_workflow", 'name'=>"Spec Workflow", 'actions'=>{ 'inspect'=>{ 'prereqs'=>['unknown'] } }}
       expect { Reqflow.new(config, 'changeme:123') }.to raise_error(Reqflow::UnknownAction)
     end
 
@@ -89,82 +89,82 @@ describe Reqflow do
       end
       expect(subject).not_to be_completed
       expect(subject).not_to be_failed
-      expect(subject.ready).to eq([:inspect])
+      expect(subject.ready).to eq(['inspect'])
     end
 
     it "should complete!" do
       subject.auto_queue = false
-      subject.complete! :inspect
+      subject.complete! 'inspect'
       expect(subject).not_to be_completed
       expect(subject).not_to be_failed
-      expect(subject.ready).to eq([:transcode_high, :transcode_medium, :transcode_low])
+      expect(subject.ready).to eq(['transcode_high', 'transcode_medium', 'transcode_low'])
     end
 
     it "should skip!" do
       subject.auto_queue = false
-      subject.complete! :inspect
-      subject.complete! :transcode_low
-      subject.skip!     :transcode_medium
-      subject.complete! :transcode_high
-      expect(subject.status(:transcode_medium)).to eq('SKIPPED')
-      expect(subject.completed?(:transcode_medium)).to be_truthy
+      subject.complete! 'inspect'
+      subject.complete! 'transcode_low'
+      subject.skip!     'transcode_medium'
+      subject.complete! 'transcode_high'
+      expect(subject.status('transcode_medium')).to eq('SKIPPED')
+      expect(subject.completed?('transcode_medium')).to be_truthy
       expect(subject).not_to be_completed
       expect(subject).not_to be_failed
-      expect(subject.ready).to eq([:distribute])
+      expect(subject.ready).to eq(['distribute'])
     end
 
     it "should fail!" do
-      subject.complete! :inspect
-      subject.complete! :transcode_high
-      subject.fail! :transcode_medium, 'It had to fail. This is a test.'
-      expect(subject.status(:transcode_medium)).to eq('FAILED')
-      expect(subject.status(:transcode_low)).to eq('QUEUED')
-      expect(subject.message(:transcode_medium)).to eq('It had to fail. This is a test.')
-      expect(subject.message(:transcode_high)).to eq(nil)
+      subject.complete! 'inspect'
+      subject.complete! 'transcode_high'
+      subject.fail! 'transcode_medium', 'It had to fail. This is a test.'
+      expect(subject.status('transcode_medium')).to eq('FAILED')
+      expect(subject.status('transcode_low')).to eq('QUEUED')
+      expect(subject.message('transcode_medium')).to eq('It had to fail. This is a test.')
+      expect(subject.message('transcode_high')).to eq(nil)
       expect(subject).not_to be_completed
       expect(subject).to be_failed
     end
 
     it "should auto_queue" do
-      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', :inspect,          'changeme:123'])
-      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', :transcode_low,    'changeme:123'])
-      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', :transcode_medium, 'changeme:123'])
-      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', :transcode_high,   'changeme:123'])
+      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', 'inspect',          'changeme:123'])
+      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', 'transcode_low',    'changeme:123'])
+      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', 'transcode_medium', 'changeme:123'])
+      expect(Resque).to receive(:push).with(instance_of(String), class: subject.class, args: ['spec_workflow', 'transcode_high',   'changeme:123'])
       subject.queue!
-      expect(subject).to be_queued(:inspect)
-      expect(subject).to be_waiting(:transcode_high)
-      expect(subject).to be_waiting(:transcode_medium)
-      expect(subject).to be_waiting(:transcode_low)
-      subject.complete!(:inspect)
-      expect(subject).to be_completed(:inspect)
-      expect(subject).to be_queued(:transcode_high)
-      expect(subject).to be_queued(:transcode_medium)
-      expect(subject).to be_queued(:transcode_low)
+      expect(subject).to be_queued('inspect')
+      expect(subject).to be_waiting('transcode_high')
+      expect(subject).to be_waiting('transcode_medium')
+      expect(subject).to be_waiting('transcode_low')
+      subject.complete!('inspect')
+      expect(subject).to be_completed('inspect')
+      expect(subject).to be_queued('transcode_high')
+      expect(subject).to be_queued('transcode_medium')
+      expect(subject).to be_queued('transcode_low')
     end
 
     it "should perform an action" do
       expect($stderr).to receive(:puts).with('Inspecting changeme:123')
-      Reqflow.perform('spec_workflow', :inspect, 'changeme:123')
-      expect(subject).to be_completed(:inspect)
-      expect(subject).to be_queued(:transcode_high)
-      expect(subject).to be_queued(:transcode_medium)
-      expect(subject).to be_queued(:transcode_low)
+      Reqflow.perform('spec_workflow', 'inspect', 'changeme:123')
+      expect(subject).to be_completed('inspect')
+      expect(subject).to be_queued('transcode_high')
+      expect(subject).to be_queued('transcode_medium')
+      expect(subject).to be_queued('transcode_low')
     end
 
     it "should know when an action is running" do
       wf = Reqflow.new 'spec_workflow', 'running?'
-      expect(wf).to be_waiting(:inspect)
-      expect_any_instance_of(ReqflowSpec::Workflow).to receive(:inspect).with('running?') { expect(wf).to be_running(:inspect) }
-      Reqflow.perform('spec_workflow', :inspect, 'running?')
-      expect(wf).to be_completed(:inspect)
+      expect(wf).to be_waiting('inspect')
+      expect_any_instance_of(ReqflowSpec::Workflow).to receive('inspect').with('running?') { expect(wf).to be_running('inspect') }
+      Reqflow.perform('spec_workflow', 'inspect', 'running?')
+      expect(wf).to be_completed('inspect')
     end
 
     it "should fail at an action" do
       wf = Reqflow.new 'spec_workflow', nil
-      expect(wf).to be_waiting(:inspect)
-      expect { Reqflow.perform('spec_workflow', :inspect, nil) }.to raise_error(RuntimeError)
-      expect(wf).to be_failed(:inspect)
-      expect(wf.message(:inspect)).to eq('RuntimeError: Unknown payload')
+      expect(wf).to be_waiting('inspect')
+      expect { Reqflow.perform('spec_workflow', 'inspect', nil) }.to raise_error(RuntimeError)
+      expect(wf).to be_failed('inspect')
+      expect(wf.message('inspect')).to eq('RuntimeError: Unknown payload')
       expect(wf.ready).to be_empty
       expect(wf).to be_failed
     end
@@ -198,7 +198,7 @@ describe Reqflow do
           expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 is changing #{change}")
           expect($stderr).to receive(:puts).with("spec_workflow for changeme:123 changed #{change}")
         end
-        subject.complete! :inspect
+        subject.complete! 'inspect'
       end
     end
   end

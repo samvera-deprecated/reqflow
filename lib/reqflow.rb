@@ -42,9 +42,9 @@ class Reqflow
 
     (@redis = Resque.redis.dup).namespace = :reqflow
     @queue = 'med'
-    @workflow_id = config[:workflow_id]
-    @name = config[:name]
-    @actions = config[:actions]
+    @workflow_id = config['workflow_id']
+    @name = config['name']
+    @actions = config['actions']
     @auto_queue = true
     @payload = payload
     verify_actions
@@ -59,8 +59,8 @@ class Reqflow
   def verify_actions
     missing = []
     @actions.each_pair do |action, definition|
-      if definition[:prereqs]
-        missing += definition[:prereqs] - @actions.keys
+      if definition['prereqs']
+        missing += definition['prereqs'] - @actions.keys
       end
     end
     if missing.length > 0
@@ -145,11 +145,11 @@ class Reqflow
     begin
       status! action, 'RUNNING'
       action_def = @actions[action]
-      action_class = action_def[:class].split(/::/).inject(Module) do |mod,sym|
+      action_class = action_def['class'].split(/::/).inject(Module) do |mod,sym|
         mod.const_get(sym.to_sym)
       end
-      action_method = (action_def[:method] || action).to_sym
-      action_class.new(action_def[:config]).send(action_method, payload)
+      action_method = (action_def['method'] || action).to_sym
+      action_class.new(action_def['config']).send(action_method, payload)
       complete! action
     rescue Exception => e
       fail! action, "#{e.class}: #{e.message}"
@@ -199,7 +199,7 @@ class Reqflow
     if action == :all
       @actions.keys.select { |a| ready(a) }
     else
-      prereqs = @actions[action][:prereqs] || []
+      prereqs = @actions[action]['prereqs'] || []
       waiting?(action) && prereqs.all? { |req| completed?(req) }
     end
   end

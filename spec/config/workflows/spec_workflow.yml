@@ -1,40 +1,40 @@
 ---
-:workflow_id: spec_workflow
-:name: Spec Workflow
-:actions:
-  :inspect:
-    :class: ReqflowSpec::Workflow
-  :transcode_high:
-    :class: ReqflowSpec::Workflow
-    :method: :transcode
-    :prereqs:
-      - :inspect
-    :config:
-      :params:
-        :command_line: '-quality high'
-  :transcode_medium:
-    :class: ReqflowSpec::Workflow
-    :method: :transcode
-    :prereqs:
-      - :inspect
-    :config:
-      :params:
-        :command_line: '-quality medium'
-  :transcode_low:
-    :class: ReqflowSpec::Workflow
-    :method: :transcode
-    :prereqs:
-      - :inspect
-    :config:
-      :params:
-        :command_line: '-quality low'
-  :distribute:
-    :class: ReqflowSpec::Workflow
-    :prereqs:
-      - :transcode_high
-      - :transcode_medium
-      - :transcode_low
-  :cleanup:
-    :class: ReqflowSpec::Workflow
-    :prereqs:
-      - :distribute
+workflow_id: spec_workflow
+name: Spec Workflow
+actions:
+  inspect:
+    class: ReqflowSpec::Workflow
+  transcode_high:
+    class: ReqflowSpec::Workflow
+    method: transcode
+    prereqs:
+      - inspect
+    config:
+      params:
+        command_line: '-quality high'
+  transcode_medium:
+    class: ReqflowSpec::Workflow
+    method: transcode
+    prereqs:
+      - inspect
+    config:
+      params:
+        command_line: '-quality medium'
+  transcode_low:
+    class: ReqflowSpec::Workflow
+    method: transcode
+    prereqs:
+      - inspect
+    config:
+      params:
+        command_line: '-quality low'
+  distribute:
+    class: ReqflowSpec::Workflow
+    prereqs:
+      - transcode_high
+      - transcode_medium
+      - transcode_low
+  cleanup:
+    class: ReqflowSpec::Workflow
+    prereqs:
+      - distribute
