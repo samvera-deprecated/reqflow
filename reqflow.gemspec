@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{Simple, self-aware, requirements based workflow manager based on Redis/Resque.}
   spec.description   = %q{Reqflow lets you define workflows based on actions that define their own prerequisites. Actions whose prerequisites are met can be queued in parallel with one another.}
   spec.homepage      = "https://github.com/projecthydra-labs/reqflow"
-  spec.license       = "Apache2"
+  spec.license       = "Apache 2"
 
   spec.files         = `git ls-files -z`.split("\x0")
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
