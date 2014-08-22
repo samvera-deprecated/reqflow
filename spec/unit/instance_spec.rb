@@ -34,30 +34,7 @@ describe Reqflow do
     subject { Reqflow.new 'spec_workflow', 'changeme:123' }
 
     before :all do
-      module ReqflowSpec
-        class Workflow
-          def initialize(config)
-            @config = config
-          end
-
-          def inspect(payload)
-            raise "Unknown payload" if payload.nil?
-            $stderr.puts "Inspecting #{payload}"
-          end
-
-          def transcode(payload)
-            $stderr.puts "Transcoding #{payload} with options #{config['params']['command_line']}"
-          end
-
-          def distribute(payload)
-            $stderr.puts "Distributing #{payload}"
-          end
-
-          def cleanup(payload)
-            $stderr.puts "Cleaning up #{payload}"
-          end
-        end
-      end
+      load File.expand_path('../../impl/spec_workflow.rb',__FILE__)
     end
 
     after :all do
@@ -167,6 +144,15 @@ describe Reqflow do
       expect(wf.message('inspect')).to eq('RuntimeError: Unknown payload')
       expect(wf.ready).to be_empty
       expect(wf).to be_failed
+    end
+    
+    it "should find an action in a specific class" do
+      expect($stderr).to receive(:puts).with('Distributing changeme:12345')
+      Reqflow.perform('spec_workflow', 'distribute', 'changeme:12345')
+    end
+
+    it "should error on an unknown class" do
+      expect { Reqflow.perform('spec_workflow', 'cleanup', 'avalon:12345') }.to raise_error(Reqflow::UnknownAction)
     end
 
     it "should report details" do

@@ -1,40 +1,40 @@
 ---
 workflow_id: spec_workflow
 name: Spec Workflow
+class: ReqflowSpec::Workflow
 actions:
-  inspect:
-    class: ReqflowSpec::Workflow
+  inspect: {} 
+    # Implmentation: ReqflowSpec::Workflow#inspect (default class/inferred method)
   transcode_high:
-    class: ReqflowSpec::Workflow
-    method: transcode
+    # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
+    method: transcode 
     prereqs:
       - inspect
     config:
-      params:
-        command_line: '-quality high'
+      command_line: '-quality high'
   transcode_medium:
-    class: ReqflowSpec::Workflow
-    method: transcode
+    # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
+    method: transcode 
     prereqs:
       - inspect
     config:
-      params:
-        command_line: '-quality medium'
+      command_line: '-quality medium'
   transcode_low:
-    class: ReqflowSpec::Workflow
-    method: transcode
+    # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
+    method: transcode 
     prereqs:
       - inspect
     config:
-      params:
-        command_line: '-quality low'
+      command_line: '-quality low'
   distribute:
-    class: ReqflowSpec::Workflow
+    # Implmentation: ReqflowSpec::Distributor#distribute (specified class/inferred method)
+    class: ReqflowSpec::Distributor 
     prereqs:
       - transcode_high
       - transcode_medium
       - transcode_low
   cleanup:
-    class: ReqflowSpec::Workflow
+    # Implmentation: ReqflowSpec::Cleanup#cleanup (specified class/inferred method)
+    class: ReqflowSpec::Cleanup 
     prereqs:
       - distribute

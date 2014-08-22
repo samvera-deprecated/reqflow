@@ -4,6 +4,7 @@ require 'yaml'
 
 require "reqflow/version"
 require "reqflow/callbacks"
+require "reqflow/worker"
 
 class Reqflow
   class FatalError < Exception; end
@@ -42,6 +43,7 @@ class Reqflow
 
     (@redis = Resque.redis.dup).namespace = :reqflow
     @queue = 'med'
+    @default_class = find_class(config['class'])
     @workflow_id = config['workflow_id']
     @name = config['name']
     @actions = config['actions']
@@ -145,9 +147,8 @@ class Reqflow
     begin
       status! action, 'RUNNING'
       action_def = @actions[action]
-      action_class = action_def['class'].split(/::/).inject(Module) do |mod,sym|
-        mod.const_get(sym.to_sym)
-      end
+      action_class = action_def.has_key?('class') ? find_class(action_def['class']) : @default_class
+      raise UnknownAction, "No class defined for #{action}" if action_class.nil?
       action_method = (action_def['method'] || action).to_sym
       action_class.new(action_def['config']).send(action_method, payload)
       complete! action
@@ -210,5 +211,16 @@ class Reqflow
 
   def inspect
     "#<#{self.class.name}:#{'0x%14.14x' % (object_id<<1)} #{to_s}>"
+  end
+  
+  private
+  def find_class(class_name)
+    begin
+      class_name.split(/::/).inject(Module) do |mod,sym|
+        mod.const_get(sym.to_sym)
+      end
+    rescue NameError
+      nil
+    end
   end
 end
