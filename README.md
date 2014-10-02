@@ -22,6 +22,11 @@ Or install it yourself as:
 
     $ gem install reqflow
 
+## Usage
+
+Please refer to `spec/config/workflows/spec_workflow.yml` and `spec/impl/spec_workflow.rb`
+for examples of how to define and configure a workflow implementation.
+
 ## Contributing
 
 1. Fork it ( https://github.com/mbklein/reqflow/fork )

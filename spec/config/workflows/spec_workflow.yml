@@ -8,33 +8,26 @@ actions:
   transcode_high:
     # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
     method: transcode 
-    prereqs:
-      - inspect
+    prereqs: ['inspect']
     config:
       command_line: '-quality high'
   transcode_medium:
     # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
     method: transcode 
-    prereqs:
-      - inspect
+    prereqs: ['inspect']
     config:
       command_line: '-quality medium'
   transcode_low:
     # Implmentation: ReqflowSpec::Workflow#transcode (default class/specified method)
     method: transcode 
-    prereqs:
-      - inspect
+    prereqs: ['inspect']
     config:
       command_line: '-quality low'
   distribute:
     # Implmentation: ReqflowSpec::Distributor#distribute (specified class/inferred method)
     class: ReqflowSpec::Distributor 
-    prereqs:
-      - transcode_high
-      - transcode_medium
-      - transcode_low
+    prereqs: ['transcode_high', 'transcode_medium', 'transcode_low']
   cleanup:
     # Implmentation: ReqflowSpec::Cleanup#cleanup (specified class/inferred method)
     class: ReqflowSpec::Cleanup 
-    prereqs:
-      - distribute
+    prereqs: ['distribute']
